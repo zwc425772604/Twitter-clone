@@ -56,11 +56,11 @@ def additem(request):
             userID = session["userID"]
             print(username)
             timestamp = int(time.time())
-            
-           
-            
+
+
+
             itemid = id_generator()
-            
+
 
             dbcontroller.mongod_additem(userID,username,content,timestamp,itemid,childType,like,parent,media)
             return json.dumps({'status':'OK',"id" : itemid})
@@ -70,7 +70,7 @@ def additem(request):
             #    quit()
             #else:
             #    return json.dumps({'status':'OK',"id" : res})
-            
+
             #if (res != None):
             #    return json.dumps({'status':'OK',"id" : res})
             #else:
@@ -102,11 +102,11 @@ def itemAction(request,item_id):
         objectID = item_id
         res = dbcontroller.mongod_getitem(objectID)
         #mysql_rs=dbcontroller.mysql_find(res['userid'],"userid")
-        
+
         itemid=res["_id"].__str__()
         username=res["username"]
         propertylist={"likes":res["like"]}
-        
+
         retweeted=res["retweeted"]
         content=res["content"]
         timestamp=res["timestamp"]
@@ -134,7 +134,7 @@ def itemAction(request,item_id):
             #    quit()
 
             #else:
-             
+
 
             #    return json.dumps({'status':'OK'})
             dbcontroller.mongod_deleteitem(item_id)
@@ -159,7 +159,7 @@ def itemLike(request,item_id):
         if "like" in json_data:
             like = json_data.get('like')
         res = dbcontroller.mongod_itemLike(item_id,currentUsername,like)
-        return json.dumps({'status':'OK'})    
+        return json.dumps({'status':'OK'})
 
 
 
@@ -188,10 +188,10 @@ def search(request):
         following=True
 
         rank="interest"
-        parent=None
+        parent=""
         replies=False
         hasMedia=False
-        
+
         currentusername=""
         if "timestamp" in json_data:
             timestamp=int(json_data.get("timestamp"))
@@ -211,7 +211,7 @@ def search(request):
 
         if "following" in json_data:
             following=json_data.get("following")
-        
+
         if "rank" in json_data:
             rank=json_data.get("rank")
 
@@ -230,52 +230,71 @@ def search(request):
 
 
         if following==False:  #search all
+
+            print("k1")
+            #print(res)
+            print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
+
             if searchusername!="":
                 #search all seachusernam
                #dbcontroller.mongod_getSpecUserItem(searchusername,timestamp,lim,q)
-                res=dbcontroller.mongod_help_searchUserItem(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)   
+                res=dbcontroller.mongod_help_searchUserItem(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                 returnlist=help_sortReturnItemList(res,rank,limit)
+                print("k2")
+                print(res)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                 return json.dumps({"status":"OK","items":returnlist})
 
             else:
                 #search all item in random
                 res=dbcontroller.mongod_help_searchItem(q,timestamp,limit,rank,parent,replies,hasMedia)
                 returnlist=help_sortReturnItemList(res,rank,limit)
+                print("k3")
+                print(res)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                 return json.dumps({"status":"OK","items":returnlist})
 
 
 
         elif following==True: #just search current user
             currentusername=session["username"]
-            
+
             followinglist=dbcontroller.mongod_getUserFollowingList(currentusername,200)
-            
+
             if searchusername!="":
 
                 if searchusername not in followinglist:
+                    print("k4")
+                    print(res)
+                    print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                     return json.dumps({'status':'OK',"items":[]})
 
                 else: #searchusername in following list
                     #just search this searchusername
+                    print("k5")
+                    print(res)
+                    print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                     res=dbcontroller.mongod_help_searchUserItem(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                     returnlist=help_sortReturnItemList(res,rank,limit)
                     return json.dumps({"status":"OK","items":returnlist})
 
-            
+
             else:
                 #searchusername="". seach all user who in followinglist
                 #returnlist=[]
-                
+
                 ##map reduce
 
 
                 #for each in followinglist:
                 #    res=help_searchUserItem(each,q,timestamp,limit,rank,parent,replies,hasMedia)
                 #    returnlist.extend(res)
-                
+
                 res=dbcontroller.mongod_help_searchUserListItem(followinglist,q,timestamp,limit,rank,parent,replies,hasMedia)
                 #according rank,limit renew sort the return
-
+                print("k6")
+                print(res)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
                 returnlist=help_sortReturnItemList(res,rank,limit)
 
                 return json.dumps({"status":"OK","items":returnlist})
@@ -290,7 +309,7 @@ def search(request):
 
 
 
-    
+
 
 
 
@@ -298,18 +317,20 @@ def search(request):
 
 from operator import itemgetter
 def help_sortReturnItemList(itemlist,rank,limit):
-    
+    print(itemlist)
+    print(dir(itemlist))
     if rank=="time":
 
         sorted(itemlist, key=lambda k: k["timestamp"])
-        return itemlist[:limit]
+        rlist=[]
+        for each in itemlist[:limit]:
+            rlist.append(each["itemid"])
+        return rlist
+
 
     if rank=="interest":
         sorted(itemlist,key=lambda k: k["interest"])
-        return itemlist[:limit]        
-
-
-
-
-
-
+        rlist=[]
+        for each in itemlist[:limit]:
+            rlist.append(each["itemid"])
+        return rlist

@@ -128,7 +128,7 @@ def mongod_additem(userid,username,content,timestamp,itemid,childType,like,paren
 
     if parent != None and childType == 'retweet':
         item=collection.find_one({"itemid":parent})
-        if parent=="":
+        if parent!="":
             db.allitems.update({ 'itemid': parent},  {'$set': { "retweeted" : item["retweeted"] + 1, 'interest': item['interest']+1} })
 
     mongodbid=collection.insert({"itemid": itemid, "userid":userid,"content":content,"timestamp":timestamp,"childType":childType,"like":like,"username" : username,'likelist': likelist,
@@ -136,7 +136,7 @@ def mongod_additem(userid,username,content,timestamp,itemid,childType,like,paren
     #objectid=mongodbid.__str__()
     # bulk = db.allitems.initialize_unordered_bulk_op()
     # x = ObjectId()
-    # bulk.insert({"_id": x, "userid":userid,"context":context,"timestamp":timestamp,"childtype":childtype,"like":like,"username" : username} )
+    # bulk.insert({"_id": x, "userid":userid,"content":content,"timestamp":timestamp,"childtype":childtype,"like":like,"username" : username} )
     # bulk.execute( )
     # objectid = x.__str__()
 
@@ -155,7 +155,7 @@ def mongod_getitem(objectid):
 
     #item=collection.find_one({"_id":ObjectId(objectid)})
     item=collection.find_one({"itemid":objectid})
-    #example {u'like': 9088, u'timestamp': 12345, u'childtype': 345444, u'userid': 765877, u'context': 890876, u'_id': ObjectId('5ab05d2b24119520c038fa1c')}
+    #example {u'like': 9088, u'timestamp': 12345, u'childtype': 345444, u'userid': 765877, u'content': 890876, u'_id': ObjectId('5ab05d2b24119520c038fa1c')}
     #can just get like item["like"]
     client.close()
     return item
@@ -167,7 +167,7 @@ def mongod_deleteitem(objectid):
     db=client.mongodb_db
     collection=db.allitems
 
-    item=collection.remove({"_id":objectid})
+    item=collection.remove({"itemid":objectid})
     client.close()
     return
 
@@ -179,6 +179,31 @@ def mongod_deleteitem(objectid):
 
 
 
+def help_decompose(cursor):
+    returnlist=[]
+    for each in cursor:
+        print("????????????????????????")
+        #print(each.values)
+        eadic={
+        "timestamp":each["timestamp"],
+        "childType":each["childType"],
+        "userid":each["userid"],
+        "replyitem":each["replyitem"],
+        "parent":each["parent"],
+        "itemid":each["itemid"],
+        "media":each["media"],
+        "likelist":each["likelist"],
+        "retweeted":each["retweeted"],
+        "content":each["content"],
+        "interest":each["interest"],
+        "like":each["like"],
+        "username":each["username"],
+        "retweetitem":each["retweetitem"],
+        "hasMedia":each["hasMedia"],
+        "originalitem":each["originalitem"]
+        }
+        returnlist.append(eadic)
+    return returnlist
 
 
 
@@ -191,16 +216,30 @@ def mongod_help_searchUserItem(searchusername,q,timestamp,limit,rank,parent,repl
 
     if replies==False:#no reply item
         if parent!="":
-            result=collection.find({ "username":searchusername,"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
+            result=collection.find({ "username":searchusername,"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i1")
+            print(result)
+            print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
         else:
-            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i2")
+            print(result)
+            print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
     else:
         if parent!="":
-            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"content":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i3")
+            print(result)
+            print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
         else:
-            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
+            result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"content":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i4")
+            print(result)
+            print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
     return result
 
 
@@ -215,16 +254,30 @@ def mongod_help_searchItem(q,timestamp,limit,rank,parent,replies,hasMedia): #all
 
     if replies==False:#no reply item
         if parent!="":
-            result=collection.find({"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
+            result=collection.find({"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i5")
+            print(result)
+            print(q,timestamp,limit,rank,parent,replies,hasMedia)
         else:
-            result=collection.find({"hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=collection.find({"hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i6")
+            print(result)
+            print(q,timestamp,limit,rank,parent,replies,hasMedia)
     else:
         if parent!="":
-            result=collection.find({"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+            result=collection.find({"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i7")
+            print(result)
+            print(q,timestamp,limit,rank,parent,replies,hasMedia)
         else:
-            result=collection.find({"hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
+            result=collection.find({"hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+            result=help_decompose(result)
+            print("i8")
+            print(result)
+            print(q,timestamp,limit,rank,parent,replies,hasMedia)
     return result
 
 
@@ -235,20 +288,35 @@ def mongod_help_searchUserListItem (followinglist,q,timestamp,limit,rank,parent,
     collection=db.allitems
 
     resultlist=[]
+    result = {}
     for searchusername in followinglist:
         if replies==False:#no reply item
             if parent!="":
-                result=collection.find({ "username":searchusername,"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
+                result=collection.find({ "username":searchusername,"hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+                result=help_decompose(result)
+                print("i9")
+                print(result)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
             else:
-                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"replyitem": False,"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+                result=help_decompose(result)
+                print("i10")
+                print(result)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
         else:
             if parent!="":
-                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
+                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"parent":parent,"timestamp":{"$lte":timestamp},"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+                result=help_decompose(result)
+                print("i11")
+                print(result)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
             else:
-                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"context":{"$regex":searchInput['q']} }).sort('_id',-1).limit(limit)
-
-        resultlist=result.extend(result)
+                result=collection.find({"username":searchusername, "hasMedia":hasMedia,"timestamp":{"$lte":timestamp},"content":{"$regex":q} }).sort('_id',-1).limit(limit)
+                result=help_decompose(result)
+                print("i12")
+                print(result)
+                print(searchusername,q,timestamp,limit,rank,parent,replies,hasMedia)
+        resultlist=resultlist.extend(result)
 
     return resultlist
 
